@@ -5,7 +5,7 @@ import soundfile as sf
 from scipy.signal import lfilter
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
-from telegram.ext.filters import Filters
+from telegram.ext import filters
 from dotenv import load_dotenv
 
 # Load environment variables
