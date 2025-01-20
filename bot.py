@@ -4,8 +4,7 @@ import librosa
 import soundfile as sf
 from scipy.signal import lfilter
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
-from telegram.ext import filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, filters
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -67,10 +66,11 @@ def main():
         if not API_TOKEN:
             raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
 
-        updater = Updater(API_TOKEN, use_context=True)
+        # Remove use_context=True
+        updater = Updater(API_TOKEN)
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(Filters.voice, handle_voice))
+        dp.add_handler(MessageHandler(filters.VOICE, handle_voice))  # Use filters.VOICE
 
         updater.start_polling()
         print("Bot is running...")
