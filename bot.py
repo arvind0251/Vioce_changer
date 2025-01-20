@@ -3,7 +3,7 @@ import numpy as np
 import librosa
 import soundfile as sf
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -26,25 +26,25 @@ def change_voice(input_file, output_file):
     sf.write(output_file, y_reverb, sr)
 
 # Command to start the bot
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Mujhe apna voice message bhejiye, main usse ladki ki voice mein badal dunga!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Mujhe apna voice message bhejiye, main usse ladki ki voice mein badal dunga!")
 
 # Handle voice messages
-def handle_voice(update: Update, context: CallbackContext):
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     voice_file = update.message.voice.get_file()
     input_path = f"{user.id}_input.ogg"
     output_path = f"{user.id}_output.ogg"
 
     # Download voice file
-    voice_file.download(input_path)
+    await voice_file.download(input_path)
 
     # Change voice pitch and apply effects
     change_voice(input_path, output_path)
 
     # Send modified voice back
     with open(output_path, 'rb') as voice:
-        update.message.reply_voice(voice)
+        await update.message.reply_voice(voice)
 
     # Cleanup files
     os.remove(input_path)
@@ -57,14 +57,14 @@ def main():
         if not API_TOKEN:
             raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
 
-        updater = Updater(API_TOKEN)
-        dp = updater.dispatcher
-        dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(filters.Voice(), handle_voice))  # Use filters.Voice() with parentheses
+        # Use ApplicationBuilder instead of Updater
+        application = ApplicationBuilder().token(API_TOKEN).build()
 
-        updater.start_polling()
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(MessageHandler(filters.VOICE, handle_voice))  # Use filters.Voice()
+
+        application.run_polling()
         print("Bot is running...")
-        updater.idle()
     except Exception as e:
         print(f"Error starting the bot: {e}")
 
