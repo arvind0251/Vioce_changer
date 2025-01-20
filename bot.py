@@ -12,7 +12,6 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
 # Function to apply reverb effect
 def apply_reverb(y, sr):
-    # Simple reverb effect using an exponential decay
     decay = 0.5
     delay = int(0.1 * sr)  # 100 ms delay
     reverb = np.zeros(len(y) + delay)
@@ -21,16 +20,9 @@ def apply_reverb(y, sr):
 
 # Function to process voice and change pitch and apply effects
 def change_voice(input_file, output_file):
-    # Load the audio file
     y, sr = librosa.load(input_file, sr=None)
-
-    # Shift the pitch (increase by 4 half-steps for a female voice)
     y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=4)
-
-    # Apply reverb effect
     y_reverb = apply_reverb(y_shifted, sr)
-
-    # Save the modified audio
     sf.write(output_file, y_reverb, sr)
 
 # Command to start the bot
@@ -65,7 +57,6 @@ def main():
         if not API_TOKEN:
             raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
 
-        # Remove use_context=True
         updater = Updater(API_TOKEN)
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
