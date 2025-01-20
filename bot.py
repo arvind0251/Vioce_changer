@@ -5,6 +5,10 @@ from telegram.ext.filters import Filters
 from pydub import AudioSegment
 from dotenv import load_dotenv
 
+# Set ffmpeg and ffprobe path
+AudioSegment.converter = os.getenv('FFMPEG_BINARY', 'ffmpeg')
+AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
+
 # Load environment variables
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
