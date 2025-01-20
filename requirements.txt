@@ -1,5 +1,5 @@
 pydub==0.25.1
-pyrubberband==0.4.0
 numpy==2.0.2
 python-telegram-bot==13.15
 python-dotenv==1.0.1
+sox==1.4.0  # Add sox for audio processing
