@@ -20,10 +20,10 @@ def apply_reverb(y, sr):
 
 # Function to process voice and change pitch and apply effects
 def change_voice(input_file, output_file):
-    y, sr = librosa.load(input_file, sr=None)
-    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=4)
-    y_reverb = apply_reverb(y_shifted, sr)
-    sf.write(output_file, y_reverb, sr)
+    y, sr = librosa.load(input_file, sr=None)  # Load audio file
+    y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=4)  # Correct pitch shifting
+    y_reverb = apply_reverb(y_shifted, sr)  # Apply reverb effect
+    sf.write(output_file, y_reverb, sr)  # Save the modified audio
 
 # Command to start the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,7 +38,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         output_path = f"{user.id}_output.ogg"
 
         # Download voice file
-        await voice_file.download_to_drive(input_path)  # Correct method for downloading
+        await voice_file.download_to_drive(input_path)
         print(f"Voice file downloaded: {input_path}")
 
         # Change voice pitch and apply effects
@@ -69,7 +69,7 @@ def main():
         application = ApplicationBuilder().token(API_TOKEN).build()
 
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.VOICE, handle_voice))  # Use filters.Voice()
+        application.add_handler(MessageHandler(filters.VOICE, handle_voice))  # Use filters.VOICE
 
         application.run_polling()
         print("Bot is running...")
