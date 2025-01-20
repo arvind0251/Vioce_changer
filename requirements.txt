@@ -1,4 +1,7 @@
 python-telegram-bot==13.15
-pydub
-ffmpeg
 python-dotenv
+pydub
+numpy
+scipy
+pyrubberband
+ffmpeg
