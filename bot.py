@@ -17,7 +17,7 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 def change_voice(input_file, output_file):
     sound = AudioSegment.from_file(input_file, format="ogg")
     # Increase pitch
-    octaves = 0.5
+    octaves = 1.0
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
     sound = sound.set_frame_rate(44100)
