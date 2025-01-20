@@ -1,8 +1,7 @@
 import os
-import numpy as np
-import librosa
-import soundfile as sf
-import pyrubberband as pyrb
+from pydub import AudioSegment
+from pydub.effects import speedup, normalize
+from pydub.generators import Sine
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from dotenv import load_dotenv
@@ -11,30 +10,29 @@ from dotenv import load_dotenv
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Function to apply reverb effect
-def apply_reverb(y, sr):
-    decay = 0.5
-    delay = int(0.1 * sr)  # 100 ms delay
-    reverb = np.zeros(len(y) + delay)
-    reverb[delay:] = y * decay
-    return y + reverb[:len(y)]
+# Function to apply reverb effect using pydub's built-in features
+def apply_reverb(sound):
+    # Generate a sine wave to simulate reverb by mixing with the original sound
+    reverb = Sine(0).to_audio_segment(duration=len(sound))  # Silence generator
+    reverb = reverb + 10  # Boost the volume of the reverb
+    return sound.overlay(reverb, position=0)
 
 # Function to process voice and change pitch, time-stretch, and apply effects
 def change_voice(input_file, output_file):
     # Load audio file
-    y, sr = librosa.load(input_file, sr=None)
+    sound = AudioSegment.from_file(input_file)
     
-    # Shift pitch for a "girl-like" voice (8 semitones up)
-    y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=8)
+    # Increase pitch moderately for a more neutral female voice
+    sound_shifted = sound.speedup(playback_speed=1.1)  # Slight speed up to raise pitch moderately
     
-    # Apply time-stretch for smoother effect (rate 1.1)
-    y_stretched = pyrb.time_stretch(y_shifted, sr, rate=1.1)
+    # Apply reverb for a richer effect
+    sound_reverb = apply_reverb(sound_shifted)
     
-    # Add reverb for a richer effect
-    y_reverb = apply_reverb(y_stretched, sr)
+    # Normalize the audio for consistency
+    sound_normalized = normalize(sound_reverb)
     
-    # Save the processed file
-    sf.write(output_file, y_reverb, sr)
+    # Export the final output
+    sound_normalized.export(output_file, format="ogg")
 
 # Command to start the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,7 +50,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await voice_file.download_to_drive(input_path)
         print(f"Voice file downloaded: {input_path}")
 
-        # Change voice pitch, apply time stretch, and apply effects
+        # Change voice pitch, apply reverb, and normalize
         change_voice(input_path, output_path)
         print(f"Voice processing complete. Output saved: {output_path}")
 
