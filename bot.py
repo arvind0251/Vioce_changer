@@ -31,24 +31,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Handle voice messages
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    voice_file = update.message.voice.get_file()
-    input_path = f"{user.id}_input.ogg"
-    output_path = f"{user.id}_output.ogg"
+    try:
+        user = update.message.from_user
+        voice_file = await update.message.voice.get_file()  # Await the coroutine
+        input_path = f"{user.id}_input.ogg"
+        output_path = f"{user.id}_output.ogg"
 
-    # Download voice file
-    await voice_file.download(input_path)
+        # Download voice file
+        await voice_file.download_to_drive(input_path)  # Correct method for downloading
+        print(f"Voice file downloaded: {input_path}")
 
-    # Change voice pitch and apply effects
-    change_voice(input_path, output_path)
+        # Change voice pitch and apply effects
+        change_voice(input_path, output_path)
+        print(f"Voice processing complete. Output saved: {output_path}")
 
-    # Send modified voice back
-    with open(output_path, 'rb') as voice:
-        await update.message.reply_voice(voice)
+        # Send modified voice back
+        with open(output_path, 'rb') as voice:
+            await update.message.reply_voice(voice)
 
-    # Cleanup files
-    os.remove(input_path)
-    os.remove(output_path)
+        # Cleanup files
+        os.remove(input_path)
+        os.remove(output_path)
+        print("Temporary files deleted.")
+
+    except Exception as e:
+        print(f"Error handling voice message: {e}")
+        await update.message.reply_text("Kuch galat ho gaya hai. Kripya phir try karein!")
 
 # Main function to run the bot
 def main():
