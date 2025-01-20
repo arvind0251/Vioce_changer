@@ -2,6 +2,7 @@ import os
 import numpy as np
 import librosa
 import soundfile as sf
+import pyrubberband as pyrb
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from dotenv import load_dotenv
@@ -18,12 +19,22 @@ def apply_reverb(y, sr):
     reverb[delay:] = y * decay
     return y + reverb[:len(y)]
 
-# Function to process voice and change pitch and apply effects
+# Function to process voice and change pitch, time-stretch, and apply effects
 def change_voice(input_file, output_file):
-    y, sr = librosa.load(input_file, sr=None)  # Load audio file
-    y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=4)  # Correct pitch shifting
-    y_reverb = apply_reverb(y_shifted, sr)  # Apply reverb effect
-    sf.write(output_file, y_reverb, sr)  # Save the modified audio
+    # Load audio file
+    y, sr = librosa.load(input_file, sr=None)
+    
+    # Shift pitch for a "girl-like" voice (8 semitones up)
+    y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=8)
+    
+    # Apply time-stretch for smoother effect (rate 1.1)
+    y_stretched = pyrb.time_stretch(y_shifted, sr, rate=1.1)
+    
+    # Add reverb for a richer effect
+    y_reverb = apply_reverb(y_stretched, sr)
+    
+    # Save the processed file
+    sf.write(output_file, y_reverb, sr)
 
 # Command to start the bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -41,7 +52,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await voice_file.download_to_drive(input_path)
         print(f"Voice file downloaded: {input_path}")
 
-        # Change voice pitch and apply effects
+        # Change voice pitch, apply time stretch, and apply effects
         change_voice(input_path, output_path)
         print(f"Voice processing complete. Output saved: {output_path}")
 
