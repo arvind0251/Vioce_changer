@@ -1,31 +1,27 @@
 import os
-import numpy as np
-from pydub import AudioSegment
-import sox  # Importing the sox library
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from telegram.ext.filters import Filters
+from pydub import AudioSegment
 from dotenv import load_dotenv
+
+# Set ffmpeg and ffprobe path
+AudioSegment.converter = os.getenv('FFMPEG_BINARY', 'ffmpeg')
+AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
 
 # Load environment variables
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Set FFmpeg and SoX paths
-AudioSegment.converter = os.getenv('FFMPEG_BINARY', '/app/.heroku/vendor/bin/ffmpeg')
-AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', '/app/.heroku/vendor/bin/ffprobe')
-os.environ["SOX_PATH"] = "/app/.heroku/vendor/bin/sox"
-
-# Function to process voice and change pitch using SoX
+# Function to process voice and change pitch
 def change_voice(input_file, output_file):
-    # Create a SoX transformer
-    tfm = sox.Transformer()
-    
-    # Apply pitch shift (use n_steps as desired for pitch shifting)
-    tfm.pitch(5)  # Pitch shift by 5 semitones (adjust as necessary)
-
-    # Perform the transformation and save the output
-    tfm.build(input_file, output_file)
+    sound = AudioSegment.from_file(input_file, format="ogg")
+    # Increase pitch
+    octaves = 0.5
+    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
+    sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
+    sound = sound.set_frame_rate(44100)
+    sound.export(output_file, format="ogg")
 
 # Command to start the bot
 def start(update: Update, context: CallbackContext):
@@ -41,7 +37,7 @@ def handle_voice(update: Update, context: CallbackContext):
     # Download voice file
     voice_file.download(input_path)
 
-    # Change voice pitch using SoX
+    # Change voice pitch
     change_voice(input_path, output_path)
 
     # Send modified voice back
@@ -72,5 +68,5 @@ def main():
     except Exception as e:
         print(f"Error starting the bot: {e}")
 
-if __name__ == "__main__":
+if name == "main":
     main()
