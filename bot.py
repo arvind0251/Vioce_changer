@@ -1,27 +1,39 @@
 import os
+import numpy as np
+import librosa
+import soundfile as sf
+from scipy.signal import lfilter
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from telegram.ext.filters import Filters
-from pydub import AudioSegment
 from dotenv import load_dotenv
-
-# Set ffmpeg and ffprobe path
-AudioSegment.converter = os.getenv('FFMPEG_BINARY', 'ffmpeg')
-AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
 
 # Load environment variables
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Function to process voice and change pitch
+# Function to apply reverb effect
+def apply_reverb(y, sr):
+    # Simple reverb effect using an exponential decay
+    decay = 0.5
+    delay = int(0.1 * sr)  # 100 ms delay
+    reverb = np.zeros(len(y) + delay)
+    reverb[delay:] = y * decay
+    return y + reverb[:len(y)]
+
+# Function to process voice and change pitch and apply effects
 def change_voice(input_file, output_file):
-    sound = AudioSegment.from_file(input_file, format="ogg")
-    # Increase pitch
-    octaves = 0.5
-    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
-    sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
-    sound = sound.set_frame_rate(44100)
-    sound.export(output_file, format="ogg")
+    # Load the audio file
+    y, sr = librosa.load(input_file, sr=None)
+
+    # Shift the pitch (increase by 4 half-steps for a female voice)
+    y_shifted = librosa.effects.pitch_shift(y, sr, n_steps=4)
+
+    # Apply reverb effect
+    y_reverb = apply_reverb(y_shifted, sr)
+
+    # Save the modified audio
+    sf.write(output_file, y_reverb, sr)
 
 # Command to start the bot
 def start(update: Update, context: CallbackContext):
@@ -37,7 +49,7 @@ def handle_voice(update: Update, context: CallbackContext):
     # Download voice file
     voice_file.download(input_path)
 
-    # Change voice pitch
+    # Change voice pitch and apply effects
     change_voice(input_path, output_path)
 
     # Send modified voice back
@@ -52,12 +64,10 @@ def handle_voice(update: Update, context: CallbackContext):
 def main():
     try:
         print("Starting bot...")
-        updater = Updater(API_TOKEN, use_context=True)
-
-        # Check if token is valid
         if not API_TOKEN:
             raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
 
+        updater = Updater(API_TOKEN, use_context=True)
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
         dp.add_handler(MessageHandler(Filters.voice, handle_voice))
