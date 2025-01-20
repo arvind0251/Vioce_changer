@@ -45,12 +45,23 @@ def handle_voice(update: Update, context: CallbackContext):
 
 # Main function to run the bot
 def main():
-    updater = Updater(API_TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.voice, handle_voice))
-    updater.start_polling()
-    updater.idle()
+    try:
+        print("Starting bot...")
+        updater = Updater(API_TOKEN, use_context=True)
+
+        # Check if token is valid
+        if not API_TOKEN:
+            raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
+
+        dp = updater.dispatcher
+        dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(MessageHandler(Filters.voice, handle_voice))
+
+        updater.start_polling()
+        print("Bot is running...")
+        updater.idle()
+    except Exception as e:
+        print(f"Error starting the bot: {e}")
 
 if __name__ == "__main__":
     main()
