@@ -2,7 +2,6 @@ import os
 import numpy as np
 import librosa
 import soundfile as sf
-from scipy.signal import lfilter
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, filters
 from dotenv import load_dotenv
@@ -70,7 +69,7 @@ def main():
         updater = Updater(API_TOKEN)
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(filters.Voice(), handle_voice))  # Use filters.Voice()
+        dp.add_handler(MessageHandler(filters.Voice, handle_voice))  # Use filters.Voice without parentheses
 
         updater.start_polling()
         print("Bot is running...")
