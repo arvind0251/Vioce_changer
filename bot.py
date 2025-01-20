@@ -70,7 +70,7 @@ def main():
         updater = Updater(API_TOKEN)
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(filters.VOICE, handle_voice))  # Use filters.VOICE
+        dp.add_handler(MessageHandler(filters.Voice(), handle_voice))  # Use filters.Voice()
 
         updater.start_polling()
         print("Bot is running...")
