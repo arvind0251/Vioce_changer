@@ -3,6 +3,8 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from telegram.ext.filters import Filters
 from pydub import AudioSegment
+import rubberband as pyrb
+import numpy as np
 from dotenv import load_dotenv
 
 # Set ffmpeg and ffprobe path
@@ -16,12 +18,26 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 # Function to process voice and change pitch
 def change_voice(input_file, output_file):
     sound = AudioSegment.from_file(input_file, format="ogg")
-    # Increase pitch
-    octaves = 1.0
-    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
-    sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
-    sound = sound.set_frame_rate(44100)
-    sound.export(output_file, format="ogg")
+    sound = sound.set_frame_rate(44100).set_channels(1)  # Convert to mono
+
+    # Convert AudioSegment to numpy array
+    samples = np.array(sound.get_array_of_samples(), dtype=np.float32)
+    sample_rate = sound.frame_rate
+
+    # Adjust pitch using pyrubberband
+    pitch_shift = 4  # Adjust this value (e.g., 3-5 for female-like voice)
+    shifted = pyrb.pitch_shift(samples, sample_rate, n_steps=pitch_shift)
+
+    # Convert numpy array back to AudioSegment
+    shifted_sound = AudioSegment(
+        shifted.tobytes(),
+        frame_rate=sample_rate,
+        sample_width=sound.sample_width,
+        channels=sound.channels
+    )
+
+    # Export the result
+    shifted_sound.export(output_file, format="ogg")
 
 # Command to start the bot
 def start(update: Update, context: CallbackContext):
@@ -34,19 +50,25 @@ def handle_voice(update: Update, context: CallbackContext):
     input_path = f"{user.id}_input.ogg"
     output_path = f"{user.id}_output.ogg"
 
-    # Download voice file
-    voice_file.download(input_path)
+    try:
+        # Download voice file
+        voice_file.download(input_path)
 
-    # Change voice pitch
-    change_voice(input_path, output_path)
+        # Change voice pitch
+        change_voice(input_path, output_path)
 
-    # Send modified voice back
-    with open(output_path, 'rb') as voice:
-        update.message.reply_voice(voice)
+        # Send modified voice back
+        with open(output_path, 'rb') as voice:
+            update.message.reply_voice(voice)
 
-    # Cleanup files
-    os.remove(input_path)
-    os.remove(output_path)
+    except Exception as e:
+        update.message.reply_text(f"Error processing your voice: {e}")
+    finally:
+        # Cleanup files
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        if os.path.exists(output_path):
+            os.remove(output_path)
 
 # Main function to run the bot
 def main():
