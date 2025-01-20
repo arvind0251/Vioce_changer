@@ -1,43 +1,31 @@
 import os
 import numpy as np
 from pydub import AudioSegment
-from pyrubberband import pyrb
+import sox  # Importing the sox library
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from telegram.ext.filters import Filters
 from dotenv import load_dotenv
 
-# Set ffmpeg and ffprobe path
-AudioSegment.converter = os.getenv('FFMPEG_BINARY', 'ffmpeg')
-AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
-
 # Load environment variables
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Set Rubberband path
-os.environ["RUBBERBAND_PATH"] = "/app/.heroku/vendor/bin/rubberband"
+# Set FFmpeg and SoX paths
+AudioSegment.converter = os.getenv('FFMPEG_BINARY', '/app/.heroku/vendor/bin/ffmpeg')
+AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', '/app/.heroku/vendor/bin/ffprobe')
+os.environ["SOX_PATH"] = "/app/.heroku/vendor/bin/sox"
 
-# Function to process voice and change pitch
+# Function to process voice and change pitch using SoX
 def change_voice(input_file, output_file):
-    sound = AudioSegment.from_file(input_file, format="ogg")
-    samples = np.array(sound.get_array_of_samples()).astype(np.float32) / (2**15)  # Normalize samples
-    sample_rate = sound.frame_rate
+    # Create a SoX transformer
+    tfm = sox.Transformer()
+    
+    # Apply pitch shift (use n_steps as desired for pitch shifting)
+    tfm.pitch(5)  # Pitch shift by 5 semitones (adjust as necessary)
 
-    # Adjust pitch using Rubberband
-    pitch_shifted = pyrb.pitch_shift(samples, sample_rate, n_steps=5)  # Adjust `n_steps` as needed
-
-    # Convert back to AudioSegment
-    pitch_shifted = (pitch_shifted * (2**15)).astype(np.int16)  # De-normalize samples
-    new_sound = AudioSegment(
-        pitch_shifted.tobytes(),
-        frame_rate=sample_rate,
-        sample_width=sound.sample_width,
-        channels=sound.channels
-    )
-
-    # Export the processed file
-    new_sound.export(output_file, format="ogg")
+    # Perform the transformation and save the output
+    tfm.build(input_file, output_file)
 
 # Command to start the bot
 def start(update: Update, context: CallbackContext):
@@ -53,7 +41,7 @@ def handle_voice(update: Update, context: CallbackContext):
     # Download voice file
     voice_file.download(input_path)
 
-    # Change voice pitch
+    # Change voice pitch using SoX
     change_voice(input_path, output_path)
 
     # Send modified voice back
