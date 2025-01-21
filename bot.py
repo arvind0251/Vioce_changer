@@ -3,37 +3,27 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
 from pydub import AudioSegment
 from dotenv import load_dotenv
-
-# Set ffmpeg and ffprobe path
-AudioSegment.converter = os.getenv('FFMPEG_BINARY', 'ffmpeg')
-AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
+from voice_cloning.generation import *  # Import the voice cloning functions
 
 # Load environment variables
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Function to process voice and change pitch with specified audio properties
+# Function to process voice and change voice using voice cloning
 def change_voice(input_file, output_file):
-    """
-    Adjust the pitch of the input voice to mimic a bot-like sound similar to the user's provided example,
-    while ensuring the audio properties are set to Mono, 48,000 Hz, and 32-bit.
-    """
-    sound = AudioSegment.from_file(input_file, format="ogg")
+    # Load the reference voice file (ensure you have a reference female voice)
+    reference_voice_path = "path/to/your/reference_female_voice.wav"  # Update this path
+    speech_text = "Your transformed voice message"  # Customize this as needed
 
-    # Pitch adjustment logic
-    octaves = 1.5  # Adjust for bot-like voice
-    new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
-    sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
-    sound = sound.set_frame_rate(48000)  # Set frame rate to 48,000 Hz
+    # Generate the cloned voice
+    generated_wav = speech_generator(
+        voice_type="western",  # or "indian"
+        sound_path=reference_voice_path,
+        speech_text=speech_text
+    )
 
-    # Convert to Mono (1 channel)
-    sound = sound.set_channels(1)
-
-    # Set sample width to 4 bytes (32-bit audio)
-    sound = sound.set_sample_width(4)
-
-    # Export the processed audio with the desired properties
-    sound.export(output_file, format="ogg")
+    # Save the generated voice to the output file
+    save_sound(generated_wav, filename=output_file, noise_reduction=True)
 
 # Command to start the bot
 async def start(update: Update, context: CallbackContext):
@@ -44,12 +34,12 @@ async def handle_voice(update: Update, context: CallbackContext):
     user = update.message.from_user
     voice_file = await update.message.voice.get_file()
     input_path = f"{user.id}_input.ogg"
-    output_path = f"{user.id}_output.ogg"
+    output_path = f"{user.id}_output.wav"  # Change to .wav for compatibility
 
     # Download voice file
     await voice_file.download_to_drive(input_path)
 
-    # Change voice pitch and apply specified audio properties
+    # Change voice using voice cloning
     change_voice(input_path, output_path)
 
     # Send modified voice back
@@ -64,7 +54,6 @@ async def handle_voice(update: Update, context: CallbackContext):
 def main():
     try:
         print("Starting bot...")
-        # Initialize the application
         application = Application.builder().token(API_TOKEN).build()
 
         # Check if token is valid
