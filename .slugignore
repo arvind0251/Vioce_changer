@@ -1,9 +1,13 @@
-# Add this to `.slugignore` in the root directory
 __pycache__/
 *.log
 *.tar.xz
 *.zip
+*.gz
+*.mp3
+*.wav
+*.ogg
+datasets/
 node_modules/
 venv/
-datasets/
 static/models/
+temp/
