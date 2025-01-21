@@ -14,11 +14,18 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
 # Function to process voice and change pitch
 def change_voice(input_file, output_file):
+    """
+    Adjust the pitch of the input voice to mimic a bot-like sound similar to the user's provided example.
+    """
     sound = AudioSegment.from_file(input_file, format="ogg")
-    octaves = 0.5
+
+    # Pitch adjustment logic
+    octaves = 0.8  # Similar to provided example; adjust for bot-like voice
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
-    sound = sound.set_frame_rate(44100)
+    sound = sound.set_frame_rate(44100)  # Standard sample rate for output
+
+    # Export the processed audio
     sound.export(output_file, format="ogg")
 
 # Command to start the bot
