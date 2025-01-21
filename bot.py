@@ -21,7 +21,7 @@ def change_voice(input_file, output_file):
     sound = AudioSegment.from_file(input_file, format="ogg")
 
     # Pitch adjustment logic
-    octaves = 0.8  # Adjust for bot-like voice
+    octaves = 1.5  # Adjust for bot-like voice
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
     sound = sound.set_frame_rate(48000)  # Set frame rate to 48,000 Hz
