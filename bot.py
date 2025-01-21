@@ -68,5 +68,5 @@ def main():
     except Exception as e:
         print(f"Error starting the bot: {e}")
 
-if name == "main":
+if __name__ == "__main__":
     main()
