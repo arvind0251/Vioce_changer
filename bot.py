@@ -12,37 +12,27 @@ AudioSegment.ffprobe = os.getenv('FFPROBE_BINARY', 'ffprobe')
 load_dotenv()
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
-# Function to process voice and change pitch
+# Function to process voice and change pitch with specified audio properties
 def change_voice(input_file, output_file):
     """
-    Adjust the pitch of the input voice to mimic a bot-like sound similar to the user's provided example.
-    Also adjusts audio parameters like duration, channels, and frame rate.
+    Adjust the pitch of the input voice to mimic a bot-like sound similar to the user's provided example,
+    while ensuring the audio properties are set to Mono, 48,000 Hz, and 32-bit.
     """
     sound = AudioSegment.from_file(input_file, format="ogg")
 
     # Pitch adjustment logic
-    octaves = 0.8  # Adjust pitch for bot-like voice
+    octaves = 0.8  # Adjust for bot-like voice
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
+    sound = sound.set_frame_rate(48000)  # Set frame rate to 48,000 Hz
 
-    # Set the frame rate to 48,000 Hz (as per the user's request)
-    sound = sound.set_frame_rate(48000)
-
-    # Ensure the audio is mono (1 channel)
+    # Convert to Mono (1 channel)
     sound = sound.set_channels(1)
 
-    # Optionally, trim or adjust the duration if required (e.g., for consistency)
-    target_duration = 20.95  # Target duration in seconds
-    current_duration = len(sound) / 1000.0  # Duration in seconds
+    # Set sample width to 4 bytes (32-bit audio)
+    sound = sound.set_sample_width(4)
 
-    if current_duration > target_duration:
-        sound = sound[:int(target_duration * 1000)]  # Trim the audio if it's longer
-    else:
-        # If it's shorter, you could loop or pad it with silence (this part can be customized)
-        silence = AudioSegment.silent(duration=(target_duration - current_duration) * 1000)
-        sound = sound + silence
-
-    # Export the processed audio
+    # Export the processed audio with the desired properties
     sound.export(output_file, format="ogg")
 
 # Command to start the bot
@@ -59,7 +49,7 @@ async def handle_voice(update: Update, context: CallbackContext):
     # Download voice file
     await voice_file.download_to_drive(input_path)
 
-    # Change voice pitch and apply audio settings
+    # Change voice pitch and apply specified audio properties
     change_voice(input_path, output_path)
 
     # Send modified voice back
