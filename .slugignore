@@ -1,4 +1,12 @@
+# Ignore unnecessary folders
 __pycache__/
+node_modules/
+venv/
+temp/
+static/models/
+datasets/
+
+# Ignore large media files
 *.log
 *.tar.xz
 *.zip
@@ -6,8 +14,3 @@ __pycache__/
 *.mp3
 *.wav
 *.ogg
-datasets/
-node_modules/
-venv/
-static/models/
-temp/
