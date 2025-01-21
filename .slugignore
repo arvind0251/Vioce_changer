@@ -1,3 +1,6 @@
 node_modules/
 tmp/
 log/
+*.ogg
+*.wav
+__pycache__/
