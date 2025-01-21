@@ -13,6 +13,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Get bot token from environment variable
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    logger.error("Bot token is missing! Set the BOT_TOKEN environment variable.")
+    raise ValueError("BOT_TOKEN environment variable not found!")
+
 # Voice conversion function (pitch and formant shifting)
 def shift_pitch_and_formant(input_file, output_file, pitch_factor=3.0):
     try:
@@ -72,7 +79,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Main function to run the bot
 async def main():
     try:
-        application = ApplicationBuilder().token("YOUR_BOT_API_TOKEN").build()
+        application = ApplicationBuilder().token(BOT_TOKEN).build()
 
         # Add command and message handlers
         application.add_handler(CommandHandler("start", start))
@@ -81,6 +88,8 @@ async def main():
         # Initialize and run polling
         await application.initialize()
         await application.run_polling()
+    except Exception as e:
+        logger.error(f"Critical error: {e}", exc_info=True)
     finally:
         await application.shutdown()
 
