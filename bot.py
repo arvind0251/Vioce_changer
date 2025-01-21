@@ -15,7 +15,6 @@ API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 # Function to process voice and change pitch
 def change_voice(input_file, output_file):
     sound = AudioSegment.from_file(input_file, format="ogg")
-    # Increase pitch
     octaves = 0.5
     new_sample_rate = int(sound.frame_rate * (2.0 ** octaves))
     sound = sound._spawn(sound.raw_data, overrides={'frame_rate': new_sample_rate})
@@ -48,7 +47,7 @@ async def handle_voice(update: Update, context: CallbackContext):
     os.remove(output_path)
 
 # Main function to run the bot
-async def main():
+def main():
     try:
         print("Starting bot...")
         # Initialize the application
@@ -62,13 +61,11 @@ async def main():
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-        # Start the bot
-        await application.start()
+        # Start the bot using run_polling()
+        application.run_polling()
         print("Bot is running...")
-        await application.idle()
     except Exception as e:
         print(f"Error starting the bot: {e}")
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
