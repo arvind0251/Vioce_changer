@@ -1,7 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
-from telegram.ext.filters import Filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
 from pydub import AudioSegment
 from dotenv import load_dotenv
 
@@ -24,49 +23,52 @@ def change_voice(input_file, output_file):
     sound.export(output_file, format="ogg")
 
 # Command to start the bot
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Mujhe apna voice message bhejiye, main usse ladki ki voice mein badal dunga!")
+async def start(update: Update, context: CallbackContext):
+    await update.message.reply_text("Mujhe apna voice message bhejiye, main usse ladki ki voice mein badal dunga!")
 
 # Handle voice messages
-def handle_voice(update: Update, context: CallbackContext):
+async def handle_voice(update: Update, context: CallbackContext):
     user = update.message.from_user
-    voice_file = update.message.voice.get_file()
+    voice_file = await update.message.voice.get_file()
     input_path = f"{user.id}_input.ogg"
     output_path = f"{user.id}_output.ogg"
 
     # Download voice file
-    voice_file.download(input_path)
+    await voice_file.download_to_drive(input_path)
 
     # Change voice pitch
     change_voice(input_path, output_path)
 
     # Send modified voice back
     with open(output_path, 'rb') as voice:
-        update.message.reply_voice(voice)
+        await update.message.reply_voice(voice)
 
     # Cleanup files
     os.remove(input_path)
     os.remove(output_path)
 
 # Main function to run the bot
-def main():
+async def main():
     try:
         print("Starting bot...")
-        updater = Updater(API_TOKEN, use_context=True)
+        # Initialize the application
+        application = Application.builder().token(API_TOKEN).build()
 
         # Check if token is valid
         if not API_TOKEN:
             raise ValueError("TELEGRAM_API_TOKEN is missing. Please check your environment variables.")
 
-        dp = updater.dispatcher
-        dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(Filters.voice, handle_voice))
+        # Register handlers
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
-        updater.start_polling()
+        # Start the bot
+        await application.start()
         print("Bot is running...")
-        updater.idle()
+        await application.idle()
     except Exception as e:
         print(f"Error starting the bot: {e}")
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
